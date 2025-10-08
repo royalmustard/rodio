@@ -78,7 +78,15 @@ impl Sink {
     /// Builds a new `Sink`.
     #[inline]
     pub fn new() -> (Sink, queue::SourcesQueueOutput) {
-        let (queue_tx, queue_rx) = queue::queue(true);
+        Sink::new_with_signal_after_end(None)
+    }
+
+    ///Builds a new `Sink` with a signal which is sent when a sound stops playing
+    #[inline]
+    pub fn new_with_signal_after_end(
+        signal_after_end: Option<Sender<()>>,
+    ) -> (Sink, queue::SourcesQueueOutput) {
+        let (queue_tx, queue_rx) = queue::queue(true, signal_after_end);
 
         let sink = Sink {
             queue_tx,
@@ -97,7 +105,6 @@ impl Sink {
         };
         (sink, queue_rx)
     }
-
     /// Appends a sound to the queue of sounds to play.
     #[inline]
     pub fn append<S>(&self, source: S)

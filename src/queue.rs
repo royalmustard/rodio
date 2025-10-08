@@ -25,7 +25,10 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 ///   a new sound.
 /// - If you pass `false`, then the queue will report that it has finished playing.
 ///
-pub fn queue(keep_alive_if_empty: bool) -> (Arc<SourcesQueueInput>, SourcesQueueOutput) {
+pub fn queue(
+    keep_alive_if_empty: bool,
+    signal_after_end: Option<Sender<()>>,
+) -> (Arc<SourcesQueueInput>, SourcesQueueOutput) {
     let input = Arc::new(SourcesQueueInput {
         next_sounds: Mutex::new(Vec::new()),
         keep_alive_if_empty: AtomicBool::new(keep_alive_if_empty),
@@ -33,7 +36,7 @@ pub fn queue(keep_alive_if_empty: bool) -> (Arc<SourcesQueueInput>, SourcesQueue
 
     let output = SourcesQueueOutput {
         current: Box::new(Empty::new()) as Box<_>,
-        signal_after_end: None,
+        signal_after_end: signal_after_end,
         input: input.clone(),
     };
 
@@ -249,7 +252,7 @@ mod tests {
     #[test]
     #[ignore] // FIXME: samples rate and channel not updated immediately after transition
     fn basic() {
-        let (tx, mut rx) = queue::queue(false);
+        let (tx, mut rx) = queue::queue(false, None);
 
         tx.append(SamplesBuffer::new(
             nz!(1),
@@ -279,13 +282,13 @@ mod tests {
 
     #[test]
     fn immediate_end() {
-        let (_, mut rx) = queue::queue(false);
+        let (_, mut rx) = queue::queue(false, None);
         assert_eq!(rx.next(), None);
     }
 
     #[test]
     fn keep_alive() {
-        let (tx, mut rx) = queue::queue(true);
+        let (tx, mut rx) = queue::queue(true, None);
         tx.append(SamplesBuffer::new(
             nz!(1),
             nz!(48000),
@@ -305,7 +308,7 @@ mod tests {
     #[test]
     #[ignore] // TODO: not yet implemented
     fn no_delay_when_added() {
-        let (tx, mut rx) = queue::queue(true);
+        let (tx, mut rx) = queue::queue(true, None);
 
         for _ in 0..500 {
             assert_eq!(rx.next(), Some(0.0));
