@@ -75,6 +75,15 @@ impl Sink {
         sink
     }
 
+    /// Builds a new `Sink`, beginning playback on a stream. Sends a signal at the end of each sound
+    #[inline]
+    pub fn connect_new_signal_after_end(mixer: &Mixer, signal_after_end: Option<Sender<()>>) -> Sink
+    {
+        let (sink, source) = Sink::new_with_signal_after_end(signal_after_end);
+        mixer.add(source);
+        sink
+    }
+
     /// Builds a new `Sink`.
     #[inline]
     pub fn new() -> (Sink, queue::SourcesQueueOutput) {
